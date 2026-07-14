@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android Standalone APK
 on:
   workflow_dispatch:
 
@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build Android Debug Preview APK
+    name: Build Android Standalone Preview APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -48,22 +48,47 @@ jobs:
             --clean \
             --no-install
 
-      - name: Build Android Debug Binary with Gradle
+      - name: Build Android Release Binary with Gradle
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Prepare Android Preview APK Artifact
+      - name: Verify APK Output and JS Bundle
         run: |
-          mv android/app/build/outputs/apk/debug/app-debug.apk ./dokploy-companion-preview.apk
-          sha256sum ./dokploy-companion-preview.apk > ./dokploy-companion-preview.apk.sha256
+          APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
+          
+          # 1. Verify file exists
+          if [ ! -f "$APK_PATH" ]; then
+            echo "ERROR: Release APK not found at $APK_PATH"
+            exit 1
+          fi
+          
+          # 2. Verify no ambiguity
+          APK_COUNT=$(find android/app/build/outputs/apk/release/ -name "*.apk" | wc -l)
+          if [ "$APK_COUNT" -ne 1 ]; then
+            echo "ERROR: Ambiguous APK structure. Found $APK_COUNT APKs instead of 1."
+            exit 1
+          fi
+          
+          # 3. Verify JavaScript bundle inside the APK
+          echo "Verifying JavaScript bundle asset presence in APK..."
+          if ! unzip -l "$APK_PATH" | grep -q "assets/index.android.bundle"; then
+            echo "ERROR: The standalone release APK is missing index.android.bundle!"
+            exit 1
+          fi
+          echo "Verification successful: index.android.bundle is present."
 
-      - name: Upload Android Preview APK
+      - name: Prepare Standalone Preview APK Artifact
+        run: |
+          mv android/app/build/outputs/apk/release/app-release.apk ./dokploy-companion-standalone-preview.apk
+          sha256sum ./dokploy-companion-standalone-preview.apk > ./dokploy-companion-standalone-preview.apk.sha256
+
+      - name: Upload Android Standalone Preview APK
         uses: actions/upload-artifact@v4
         with:
-          name: Android Preview APK
+          name: Dokploy Companion Standalone Preview APK
           path: |
-            dokploy-companion-preview.apk
-            dokploy-companion-preview.apk.sha256
+            dokploy-companion-standalone-preview.apk
+            dokploy-companion-standalone-preview.apk.sha256
           retention-days: 14
