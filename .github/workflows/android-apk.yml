@@ -14,33 +14,50 @@ jobs:
     name: Build Android Standalone Preview APK
     runs-on: ubuntu-latest
     steps:
+      # ── Guard ──────────────────────────────────────────────────────────────
+      - name: Verify branch is main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "ERROR: This workflow must be triggered from the main branch."
+          echo "Current branch: ${{ github.ref }}"
+          echo "Dispatch from main after CI is green."
+          exit 1
+
+      # ── Source ─────────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ── Node (with npm cache) ───────────────────────────────────────────────
       - name: Setup Node.js (Node 22)
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'npm'
 
+      # ── Java ───────────────────────────────────────────────────────────────
       - name: Setup Java JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
+      # ── Gradle dependency cache + build-output cache ────────────────────────
+      # gradle/actions/setup-gradle@v6 caches ~/.gradle/caches and
+      # ~/.gradle/wrapper automatically.  cache-provider: basic uses
+      # actions/cache under the hood (MIT, works on private repos at no extra
+      # cost).  The action is placed before prebuild so Gradle wrapper is
+      # downloaded once and the dependency cache is already warm when
+      # assembleRelease runs.
+      - name: Setup Gradle (with dependency + build cache)
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      # ── npm install ─────────────────────────────────────────────────────────
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Jest Test Suite
-        run: npm run test:ci
-
-      - name: Run TypeScript Typecheck
-        run: npm run typecheck
-
-      - name: Run Expo Diagnostics
-        run: npm run doctor
-
+      # ── Prebuild ────────────────────────────────────────────────────────────
       - name: Generate Android Project (Expo CNG Prebuild)
         run: |
           CI=1 EXPO_NO_GIT_STATUS=1 npx expo prebuild \
@@ -48,29 +65,31 @@ jobs:
             --clean \
             --no-install
 
+      # ── Gradle build ────────────────────────────────────────────────────────
       - name: Build Android Release Binary with Gradle
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon --stacktrace
 
+      # ── Verify ──────────────────────────────────────────────────────────────
       - name: Verify APK Output and JS Bundle
         run: |
           APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
-          
+
           # 1. Verify file exists
           if [ ! -f "$APK_PATH" ]; then
             echo "ERROR: Release APK not found at $APK_PATH"
             exit 1
           fi
-          
+
           # 2. Verify no ambiguity
           APK_COUNT=$(find android/app/build/outputs/apk/release/ -name "*.apk" | wc -l)
           if [ "$APK_COUNT" -ne 1 ]; then
             echo "ERROR: Ambiguous APK structure. Found $APK_COUNT APKs instead of 1."
             exit 1
           fi
-          
+
           # 3. Verify JavaScript bundle inside the APK
           echo "Verifying JavaScript bundle asset presence in APK..."
           if ! unzip -l "$APK_PATH" | grep -q "assets/index.android.bundle"; then
@@ -79,6 +98,7 @@ jobs:
           fi
           echo "Verification successful: index.android.bundle is present."
 
+      # ── Artifact ────────────────────────────────────────────────────────────
       - name: Prepare Standalone Preview APK Artifact
         run: |
           mv android/app/build/outputs/apk/release/app-release.apk ./dokploy-companion-standalone-preview.apk
