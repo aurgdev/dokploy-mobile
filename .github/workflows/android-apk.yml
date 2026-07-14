@@ -41,18 +41,6 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      # ── Gradle dependency cache + build-output cache ────────────────────────
-      # gradle/actions/setup-gradle@v6 caches ~/.gradle/caches and
-      # ~/.gradle/wrapper automatically.  cache-provider: basic uses
-      # actions/cache under the hood (MIT, works on private repos at no extra
-      # cost).  The action is placed before prebuild so Gradle wrapper is
-      # downloaded once and the dependency cache is already warm when
-      # assembleRelease runs.
-      - name: Setup Gradle (with dependency + build cache)
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-provider: basic
-
       # ── npm install ─────────────────────────────────────────────────────────
       - name: Install dependencies
         run: npm ci
@@ -64,6 +52,15 @@ jobs:
             --platform android \
             --clean \
             --no-install
+
+      # ── Gradle dependency + build-output cache ─────────────────────────────
+      # Must run AFTER prebuild so that android/ exists and setup-gradle can
+      # hash *.gradle / gradle-wrapper.properties into its cache key.
+      # cache-provider: basic wraps actions/cache (MIT, all repo types).
+      - name: Setup Gradle (with dependency + build cache)
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
 
       # ── Gradle build ────────────────────────────────────────────────────────
       - name: Build Android Release Binary with Gradle
