@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Community Support
+    url: https://github.com/aurgdev/dokploy-mobile/discussions
+    about: Please ask questions and discuss ideas or configurations in Discussions.
