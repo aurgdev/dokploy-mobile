@@ -1,0 +1,57 @@
+name: 🐛 Bug Report
+description: Report a bug or issue with Dokploy Companion
+title: "[BUG]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please ensure you do **NOT** include private server IP addresses, credentials, or API keys in this submission.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: App Version
+      description: E.g., 0.1.0-beta.1
+    validations:
+      required: true
+  - type: input
+    id: dokploy-version
+    attributes:
+      label: Dokploy Server Version
+      description: E.g., v0.3.0
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Android (Physical Device)
+        - Android (Emulator)
+        - iOS (Keychain/Local)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Explain how we can reproduce this behavior.
+      placeholder: |
+        1. Open connection settings
+        2. Enter address...
+        3. Click test connection...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs or Console Outputs
+      description: Please paste logs here, making sure all server credentials and API keys are redacted.
