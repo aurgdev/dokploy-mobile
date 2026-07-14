@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Dokploy Companion",
+    "slug": "dokploy-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#000000",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aurgdev.dokploymobile",
+      "backgroundColor": "#000000"
+    },
+    "android": {
+      "package": "com.aurgdev.dokploymobile",
+      "backgroundColor": "#000000"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-status-bar",
+      "expo-font"
+    ],
+    "scheme": "dokploymobile"
+  }
+}
