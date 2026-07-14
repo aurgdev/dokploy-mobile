@@ -6,7 +6,7 @@ This document outlines the development status and planned direction for the **Do
 
 ## ✅ Completed
 
-- **Secure Connection & Biometric Lock**: Encrypted credentials in local hardware-backed storage (`SecureStore`) with optional fingerprint/face authentication gating.
+- **Secure Connection & Biometric Lock**: Encrypted credentials in local storage using SecureStore (Android Keystore / iOS Keychain integration) with optional fingerprint/face authentication gating.
 - **Capability & Permission Foundation**: Automatic feature discovery based on target Dokploy version and endpoint scans; permission-aware read/write controls.
 - **Dashboard Telemetry**: Real-time VPS resource dials (CPU, RAM, and Disk) with status cards.
 - **Projects & Resource Controls**: Categorized namespaces (Projects, Applications, Databases, Compose).
@@ -15,21 +15,19 @@ This document outlines the development status and planned direction for the **Do
 - **Database Backups**: Backup health status, lists of recent backup files, and manual backup triggers.
 - **Volume Backups**: Dedicated dashboard and backup plans for named application volumes.
 - **Server Maintenance Tools**: Host VPS cleanups (Docker image, unused containers, volumes, build caches).
+- **Incident Center (v1)**: Consolidated warning dashboard showing failed/stuck deployments, stuck queue jobs, unhealthy docker service containers, and backup failures, with local profile-scoped acknowledgements and logs bottom-sheet viewer.
 
 ---
 
 ## 🚀 Next (Beta Milestones)
 
-1. **Incident Center & Priority Alerts**: Consolidated warning dashboard showing failed containers or high resource usage.
-2. **Failed & Stuck Deployment Recovery**: Diagnostic utilities to inspect and troubleshoot frozen build queues.
-3. **Deployment Cancellation & Rollback**: Terminating active builds and rolling back services to previous images.
-4. **Notification Integrations**: Push notification support for service health updates.
-5. **Environment Variables & Configuration Editing**: Managing server/container env properties dynamically.
-6. **Ports, Mounts, Redirects & Schedules**: Finer settings for application routes and cron schedules.
-7. **Multi-instance Connection Profiles**: Fast switching between multiple configured Dokploy VPS servers.
-8. **Remote-Server Management**: Basic host OS administration tools.
-9. **Request & Traffic Logs**: High-level traffic analytics dashboard (where Traefik logs are enabled).
-10. **Open-source Beta Stabilization**: Enhancing responsiveness, resolving outstanding edge cases, and community audit support.
+1. **Failed & Stuck Deployment Recovery**: Diagnostic utilities to inspect and troubleshoot frozen build queues.
+2. **Deployment Cancellation & Rollback**: Terminating active builds and rolling back services to previous images.
+3. **Notification Integrations**: Push notification support for service health updates.
+4. **Environment Variables & Configuration Editing**: Managing server/container env properties dynamically.
+5. **Ports, Mounts, Redirects & Schedules**: Finer settings for application routes and cron schedules.
+6. **Request & Traffic Logs**: High-level traffic analytics dashboard (where Traefik logs are enabled).
+7. **Open-source Beta Stabilization**: Enhancing responsiveness, resolving outstanding edge cases, and community audit support.
 
 ---
 
@@ -43,3 +41,6 @@ This document outlines the development status and planned direction for the **Do
 - **Advanced Traefik Tools**: Traefik middleware config support.
 - **Team & Organization Administration**: Multi-user permissions management.
 - **Restore Workflows**: Adding backup restoration actions (planned only after API safety guarantees are validated).
+- **Multi-server Dokploy Management — Final Milestone**:
+  Manage multiple Dokploy VPS instances from separate secure connection profiles.
+  This milestone is intentionally deferred until a second VPS is available for real physical-device testing.

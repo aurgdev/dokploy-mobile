@@ -280,6 +280,10 @@ export function useDokployCapabilities() {
             readVolumeBackups: (paths.includes('/volumeBackups.list') || paths.includes('/volumeBackup.list')) ? (cached?.capabilities.readVolumeBackups || 'unknown') : 'unsupported',
             manageVolumeBackups: (paths.includes('/volumeBackups.create') || paths.includes('/volumeBackup.create')) ? (cached?.capabilities.manageVolumeBackups || 'unknown') : 'unsupported',
             runVolumeBackups: (paths.includes('/volumeBackups.runManually') || paths.includes('/volumeBackup.runManually')) ? (cached?.capabilities.runVolumeBackups || 'unknown') : 'unsupported',
+            readIncidents: paths.includes('/deployment.allCentralized') ? (cached?.capabilities.readIncidents || 'unknown') : 'unsupported',
+            readCentralDeployments: paths.includes('/deployment.allCentralized') ? (cached?.capabilities.readCentralDeployments || 'unknown') : 'unsupported',
+            readDeploymentQueue: paths.includes('/deployment.queueList') ? (cached?.capabilities.readDeploymentQueue || 'unknown') : 'unsupported',
+            readDeploymentLogs: paths.includes('/deployment.readLogs') ? (cached?.capabilities.readDeploymentLogs || 'unknown') : 'unsupported',
           };
         } else {
           caps = cached?.capabilities || createDefaultCapabilities('unknown');

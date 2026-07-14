@@ -36,3 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * **Database & Volume Backups**
   * Real-time tracking of database backup schedules, backup file histories, and manual execution triggers.
   * Named application and Docker Compose volume backup configurations with bind-mount protection rules.
+
+* **Incident Center (v1)**
+  * Normalized priority warnings dashboard combining failed/stuck deployments, stuck queue tasks, unhealthy Docker services, and backup errors.
+  * Deterministic, stable incident IDs preventing duplicate listings across page refreshes.
+  * Local profile-scoped incident acknowledgement (Ack) status stored in AsyncStorage with 30-day automatic pruning rules.
+  * Bottom-sheet logs viewer for inspecting failed deployments directly from the incident card.

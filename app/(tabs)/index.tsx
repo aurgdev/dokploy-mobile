@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
+import { useIncidents } from '../../src/features/incidents/incident.queries';
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 32 - 12) / 2; // spacing: 16 on each side, gap is 12
@@ -93,6 +94,8 @@ export default function DashboardScreen() {
   // Sparkline rolling histories (last 15 points, polled every 3s)
   const [cpuHistory, setCpuHistory] = useState<number[]>(new Array(15).fill(12));
   const [ramHistory, setRamHistory] = useState<number[]>(new Array(15).fill((3.49 / 8) * 100));
+
+  const { data: incidentData, isLoading: incidentLoading, error: incidentError, refetch: refetchIncidents } = useIncidents();
 
   // Fetch Projects query
   const { data: projects = [], isLoading: loading, refetch, isRefetching } = useQuery({
@@ -188,6 +191,7 @@ export default function DashboardScreen() {
 
   const handleRefresh = () => {
     refetch();
+    refetchIncidents();
   };
 
   const handleProjectPress = (project: any) => {
@@ -214,6 +218,193 @@ export default function DashboardScreen() {
 
   // Display only the 3 most recent projects on the dashboard
   const recentProjects = projects.slice(0, 3);
+
+  const renderIncidentCard = () => {
+    const handlePress = () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.push('/incidents');
+    };
+
+    // Header component inside the card
+    const cardHeader = (
+      <View style={[styles.incidentCardHeader, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.incidentCardTitle, { color: colors.text }]}>Incident Center</Text>
+        <View style={styles.incidentActionLink}>
+          <Text style={{ color: colors.activeTint, fontSize: 12, fontWeight: '600' }}>View Incident Center</Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.activeTint} style={{ marginLeft: 2 }} />
+        </View>
+      </View>
+    );
+
+    // 1. Loading state
+    if (incidentLoading) {
+      return (
+        <TouchableOpacity 
+          style={[styles.incidentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={handlePress}
+          accessibilityRole="button"
+          accessibilityLabel="Incident Center. Checking incident status..."
+        >
+          {cardHeader}
+          <View style={styles.incidentCardBodyRow}>
+            <ActivityIndicator size="small" color={colors.textSecondary} />
+            <Text style={[styles.incidentStatusText, { color: colors.textSecondary, marginLeft: 8 }]}>
+              Checking incident status...
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    const sourceState = incidentData?.sourceState;
+    const allFailed = incidentError || !incidentData || (sourceState && Object.values(sourceState).every(s => s === 'error' || s === 'forbidden' || s === 'unsupported'));
+    const partialFailed = !allFailed && sourceState && Object.values(sourceState).some(s => s === 'error' || s === 'forbidden');
+
+    // 2. All sources failed or general error state
+    if (allFailed) {
+      return (
+        <TouchableOpacity 
+          style={[styles.incidentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={handlePress}
+          accessibilityRole="button"
+          accessibilityLabel="Incident Center. Incident status partially unavailable."
+        >
+          {cardHeader}
+          <View style={styles.incidentCardBodyRow}>
+            <Ionicons name="alert-circle-outline" size={20} color={colors.textSecondary} />
+            <View style={{ marginLeft: 10 }}>
+              <Text style={[styles.incidentStatusText, { color: colors.textSecondary, fontWeight: '700' }]}>
+                Incident status partially unavailable
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    const activeIncidents = incidentData?.incidents.filter(inc => !inc.isAcknowledged) || [];
+
+    // 3. Partial failure state (some failed, some succeeded)
+    if (partialFailed) {
+      if (activeIncidents.length === 0) {
+        return (
+          <TouchableOpacity 
+            style={[styles.incidentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={handlePress}
+            accessibilityRole="button"
+            accessibilityLabel="Incident Center. Incident status partially unavailable."
+          >
+            {cardHeader}
+            <View style={styles.incidentCardBodyRow}>
+              <Ionicons name="alert-circle-outline" size={20} color={colors.textSecondary} />
+              <View style={{ marginLeft: 10 }}>
+                <Text style={[styles.incidentStatusText, { color: colors.textSecondary, fontWeight: '700' }]}>
+                  Incident status partially unavailable
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        );
+      } else {
+        const hasCritical = activeIncidents.some(i => i.severity === 'critical');
+        const hasError = activeIncidents.some(i => i.severity === 'error');
+        const highestSeverity = hasCritical ? 'critical' : hasError ? 'error' : 'warning';
+        const severityColor = highestSeverity === 'critical' || highestSeverity === 'error' ? '#ff4444' : '#ffbb00';
+
+        return (
+          <TouchableOpacity 
+            style={[styles.incidentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={handlePress}
+            accessibilityRole="button"
+            accessibilityLabel={`Incident Center. Incident status partially unavailable. ${activeIncidents.length} items need attention.`}
+          >
+            {cardHeader}
+            <View style={styles.incidentCardBodyRow}>
+              <Ionicons name="warning" size={22} color={severityColor} />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={[styles.incidentTitle, { color: colors.text, fontWeight: '700' }]}>
+                  {activeIncidents.length} {activeIncidents.length === 1 ? 'item needs' : 'items need'} attention
+                </Text>
+                <Text style={[styles.incidentSubtitle, { color: colors.textSecondary, fontSize: 12, marginTop: 2 }]}>
+                  Highest severity: <Text style={{ color: severityColor, fontWeight: '600' }}>{highestSeverity}</Text>
+                </Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 11, fontStyle: 'italic', marginTop: 4 }}>
+                  Warning: Incident status partially unavailable
+                </Text>
+                
+                <View style={styles.incidentPreviews}>
+                  {activeIncidents.slice(0, 3).map(inc => (
+                    <Text key={inc.incidentId} style={[styles.previewItem, { color: colors.textSecondary }]} numberOfLines={1}>
+                      • {inc.title}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        );
+      }
+    }
+
+    // 4. Zero active incidents (all succeeded and zero found)
+    if (activeIncidents.length === 0) {
+      return (
+        <TouchableOpacity 
+          style={[styles.incidentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={handlePress}
+          accessibilityRole="button"
+          accessibilityLabel="Incident Center. All clear. No active incidents."
+        >
+          {cardHeader}
+          <View style={styles.incidentCardBodyRow}>
+            <Ionicons name="checkmark-circle" size={20} color="#44bb44" />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={[styles.incidentTitle, { color: colors.text }]}>All clear</Text>
+              <Text style={[styles.incidentSubtitle, { color: colors.textSecondary }]}>
+                No confirmed active incidents
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    // 5. Incidents exist (all succeeded, N active incidents)
+    const hasCritical = activeIncidents.some(i => i.severity === 'critical');
+    const hasError = activeIncidents.some(i => i.severity === 'error');
+    const highestSeverity = hasCritical ? 'critical' : hasError ? 'error' : 'warning';
+    const severityColor = highestSeverity === 'critical' || highestSeverity === 'error' ? '#ff4444' : '#ffbb00';
+
+    return (
+      <TouchableOpacity 
+        style={[styles.incidentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        onPress={handlePress}
+        accessibilityRole="button"
+        accessibilityLabel={`Incident Center. ${activeIncidents.length} items need attention. Highest severity: ${highestSeverity}`}
+      >
+        {cardHeader}
+        <View style={styles.incidentCardBodyRow}>
+          <Ionicons name="warning" size={22} color={severityColor} />
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={[styles.incidentTitle, { color: colors.text, fontWeight: '700' }]}>
+              {activeIncidents.length} {activeIncidents.length === 1 ? 'item needs' : 'items need'} attention
+            </Text>
+            <Text style={[styles.incidentSubtitle, { color: colors.textSecondary, fontSize: 12, marginTop: 2 }]}>
+              Highest severity: <Text style={{ color: severityColor, fontWeight: '600' }}>{highestSeverity}</Text>
+            </Text>
+            
+            <View style={styles.incidentPreviews}>
+              {activeIncidents.slice(0, 3).map(inc => (
+                <Text key={inc.incidentId} style={[styles.previewItem, { color: colors.textSecondary }]} numberOfLines={1}>
+                  • {inc.title}
+                </Text>
+              ))}
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -265,6 +456,8 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        {/* Incident Center Summary Card */}
+        {renderIncidentCard()}
 
         {/* Recent Namespaces Section */}
         <View style={styles.sectionHeaderRow}>
@@ -506,5 +699,58 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
+  },
+  incidentCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 24,
+  },
+  incidentCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    paddingBottom: 8,
+  },
+  incidentCardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  incidentActionLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  incidentCardBodyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  incidentTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  incidentSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+    lineHeight: 18,
+  },
+  incidentPreviews: {
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#1a1a1a',
+    paddingTop: 8,
+  },
+  previewItem: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  incidentStatusText: {
+    fontSize: 14,
+    fontWeight: '500',
   }
 });

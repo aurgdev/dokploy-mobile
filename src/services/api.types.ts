@@ -73,6 +73,10 @@ export const DOKPLOY_CAPABILITY_KEYS = [
   "readVolumeBackups",
   "manageVolumeBackups",
   "runVolumeBackups",
+  "readIncidents",
+  "readCentralDeployments",
+  "readDeploymentQueue",
+  "readDeploymentLogs",
 ] as const;
 
 export type DokployCapabilityKey = typeof DOKPLOY_CAPABILITY_KEYS[number];
