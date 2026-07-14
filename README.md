@@ -1,8 +1,5 @@
 # 📱 Dokploy Companion
 
-<p align="center">
-  <img src="./assets/banner.jpg" alt="Dokploy Companion Banner" width="100%" style="border-radius: 8px;" />
-</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Expo-SDK_57-00021A?style=for-the-badge&logo=expo&logoColor=white" alt="Expo SDK 57" />
